@@ -1,5 +1,7 @@
 package com.alycarter.ludumDare27;
 
+import java.awt.MouseInfo;
+import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -19,9 +21,12 @@ public class Controls implements KeyListener, MouseListener{
 	private boolean mouseHeld = false;
 	private boolean mouseClicked = false;
 	
+	public Point mouseLocation = new Point(0,0);
 	
-	public Controls() {
-		// TODO Auto-generated constructor stub
+	public Game game;
+	
+	public Controls(Game game) {
+		this.game=game;
 	}
 
 	@Override
@@ -43,13 +48,17 @@ public class Controls implements KeyListener, MouseListener{
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		mouseHeldBuffer=true;
+		if(e.getButton()==MouseEvent.BUTTON1){
+			mouseHeldBuffer=true;
+		}
 	}
 
 	@Override
-	public void mouseReleased(MouseEvent arg0) {
-		mouseHeldBuffer=false;
-		mouseClickedBuffer=true;
+	public void mouseReleased(MouseEvent e) {
+		if(e.getButton()==MouseEvent.BUTTON1){
+			mouseHeldBuffer=false;
+			mouseClickedBuffer=true;
+		}
 	}
 
 	@Override
@@ -62,7 +71,7 @@ public class Controls implements KeyListener, MouseListener{
 	@Override
 	public void keyReleased(KeyEvent e) {
 		keysPressedBuffer.remove(new Integer(e.getKeyCode()));
-		if(keysReleasedBuffer.contains(new Integer(e.getKeyCode()))){
+		if(!keysReleasedBuffer.contains(new Integer(e.getKeyCode()))){
 			keysReleasedBuffer.add(e.getKeyCode());
 		}
 		
@@ -76,6 +85,9 @@ public class Controls implements KeyListener, MouseListener{
 	
 	public void update(){
 		try{
+			mouseLocation=MouseInfo.getPointerInfo().getLocation();
+			mouseLocation.x-=game.getLocationOnScreen().getX()+3;
+			mouseLocation.y-=game.getLocationOnScreen().getY()+25;
 			mouseHeld=mouseHeldBuffer;
 			mouseClicked=mouseClickedBuffer;
 			mouseClickedBuffer=false;

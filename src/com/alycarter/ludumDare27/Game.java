@@ -18,7 +18,7 @@ public class Game extends JFrame {
 	private boolean running = false;
 	public StateMachine stateMachine = new StateMachine();
 	public double deltaTime=0;
-	public Controls controls = new Controls();
+	public Controls controls = new Controls(this);
 	
 	private int frameLimit = 120;
 	public int framesLastSeconds  =0;
@@ -31,8 +31,8 @@ public class Game extends JFrame {
 		 setLayout(null);
 		 canvas = new Canvas();
 		 add(canvas);
-		 addMouseListener(controls);
-		 addKeyListener(controls);
+		 canvas.addMouseListener(controls);
+		 canvas.addKeyListener(controls);
 	}
 	
 	public void play(){
@@ -91,12 +91,12 @@ public class Game extends JFrame {
 	}
 
 	private void update() {
+		controls.update();
 		if(stateMachine.getCurrentState()!=null){
 			stateMachine.getCurrentState().update();
 		}else{
 			endGame();
 		}
-		controls.update();
 	};
 	
 	public void endGame(){
@@ -105,7 +105,7 @@ public class Game extends JFrame {
 	}
 	
 	public static void main(String[] args) {
-		Game game = new Game("Ludum Dare", 640, 480);
+		Game game = new Game("saloon shoot out", 640, 480);
 		game.play();
 	}
 
