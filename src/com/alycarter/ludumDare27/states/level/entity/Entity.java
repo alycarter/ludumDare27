@@ -3,7 +3,10 @@ package com.alycarter.ludumDare27.states.level.entity;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D.Double;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
 
 import com.alycarter.ludumDare27.Game;
 import com.alycarter.ludumDare27.graphics.AnimationSet;
@@ -33,6 +36,7 @@ public abstract class Entity {
 	public static final int enemy = 1;
 	public static final int bullet = 2;
 	public static final int camera = -1;
+	public Double lookDirection;
 	
 	public AnimationSet animations =new AnimationSet();
 	
@@ -46,6 +50,8 @@ public abstract class Entity {
 		this.hitBoxSize= hitBoxSize;
 		this.imageSize = imageSize;
 		this.direction= angleAsVector(VectorAsAngle(new Double(direction.x, direction.y)));
+		lookDirection=new Double();
+		lookDirection.setLocation(getDirection());
 		this.velocity=velocity;
 		
 	}
@@ -107,10 +113,19 @@ public abstract class Entity {
 			g.setColor(Color.BLACK);
 		}
 		Point loc = getLocationOnScreen();
-		loc.x-=(hitBoxSize/2)*level.unitResolution;
-		loc.y-=(hitBoxSize/2)*level.unitResolution;
-		g.drawImage(animations.getCurrentFrame(),loc.x, loc.y,(int)(imageSize*level.unitResolution), (int)(imageSize*level.unitResolution),null);
-		g.drawOval(loc.x, loc.y,(int)(hitBoxSize*level.unitResolution), (int)(hitBoxSize*level.unitResolution));
+		if(animations.getCurrentFrame()!=null){
+			double rotation = Math.toRadians(Entity.VectorAsAngle(lookDirection))*-1;
+			BufferedImage img = new BufferedImage(animations.getCurrentFrame().getWidth(), animations.getCurrentFrame().getHeight(), BufferedImage.TYPE_INT_ARGB);
+			double locationX = img.getWidth() / 2;
+			double locationY = img.getHeight() / 2;
+			AffineTransform tx = AffineTransform.getRotateInstance(rotation, locationX, locationY);
+			AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+			img.getGraphics().drawImage(op.filter(animations.getCurrentFrame(), null), 0, 0, null);
+			g.drawImage(img,loc.x-(int)((imageSize/2)*level.unitResolution), loc.y-(int)((imageSize/2)*level.unitResolution),
+					(int)(imageSize*level.unitResolution), (int)(imageSize*level.unitResolution),null);
+		}
+		g.drawOval(loc.x-(int)((hitBoxSize/2)*level.unitResolution), loc.y-(int)((hitBoxSize/2)*level.unitResolution),
+				(int)(hitBoxSize*level.unitResolution), (int)(hitBoxSize*level.unitResolution));
 		onRender(g);
 	}
 	

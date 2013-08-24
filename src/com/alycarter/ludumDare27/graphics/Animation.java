@@ -12,11 +12,11 @@ public class Animation {
 	private Game game;
 	public String name;
 	
-	public Animation(Game game, String name, TileSheet sheet, int frames) {
+	public Animation(Game game, String name, TileSheet sheet, int frames, int startTile) {
 		this.name=name;
 		this.game=game;
 		for(int i=0;i<frames;i++){
-			this.frames.add(sheet.getTile(i));
+			this.frames.add(sheet.getTile(i+startTile));
 		}
 	}
 	

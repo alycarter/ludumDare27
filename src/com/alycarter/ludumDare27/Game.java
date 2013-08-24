@@ -33,6 +33,7 @@ public class Game extends JFrame {
 		 add(canvas);
 		 canvas.addMouseListener(controls);
 		 canvas.addKeyListener(controls);
+
 	}
 	
 	public void play(){
@@ -73,6 +74,7 @@ public class Game extends JFrame {
 		canvas.setSize(getWidth(), getHeight());
 		canvas.setLocation(0, 0);
 		stateMachine.push(new Level(this));
+		canvas.requestFocusInWindow();
 	}
 	
 	private void render() {

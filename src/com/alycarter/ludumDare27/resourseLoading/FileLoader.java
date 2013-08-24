@@ -21,10 +21,9 @@ public class FileLoader {
 		try {
 			InputStream file = loadFile(fileName);
 			BufferedImage image =  ImageIO.read(file);
-			file.close();
 			return image;
 		} catch (IOException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 			return null;
 		}
 	}

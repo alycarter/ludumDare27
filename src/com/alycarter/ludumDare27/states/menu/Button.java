@@ -6,7 +6,7 @@ import java.awt.Rectangle;
 import com.alycarter.ludumDare27.Controls;
 
 public abstract class Button {
-	private Rectangle rectangle;
+	public Rectangle rectangle;
 	private Controls controls;
 	
 	public Button(Controls controls, int x, int y, int width, int height) {
@@ -21,9 +21,17 @@ public abstract class Button {
 	}
 	
 	public void render(Graphics g){
-		g.drawRect(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+//		g.drawRect(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+		onRender(g);
 	}
 	
+	
+	
+	public void onRender(Graphics g) {
+		// TODO Auto-generated method stub
+		
+	}
+
 	public abstract void onClick();
 
 }
