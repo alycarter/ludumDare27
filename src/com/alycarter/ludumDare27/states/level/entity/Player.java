@@ -2,13 +2,17 @@ package com.alycarter.ludumDare27.states.level.entity;
 
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D.Double;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
 
 import com.alycarter.ludumDare27.Game;
 import com.alycarter.ludumDare27.graphics.Animation;
 import com.alycarter.ludumDare27.graphics.TileSheet;
 import com.alycarter.ludumDare27.resourseLoading.FileLoader;
 import com.alycarter.ludumDare27.stateMachine.LooseScreen;
+import com.alycarter.ludumDare27.stateMachine.WarningScreen;
 import com.alycarter.ludumDare27.states.level.Level;
 
 public class Player extends Entity {
@@ -19,6 +23,7 @@ public class Player extends Entity {
 	public boolean weaponDrawn = false;
 	
 	private Double shootDirection = new Double(0, 0);
+	private BufferedImage arrow ;
 	
 	public int bullets = 3;
 	
@@ -29,12 +34,13 @@ public class Player extends Entity {
 	public static final int command_reload =8;
 	
 	public Player(Game game, Level level, Double location) {
-		super(game, level, Entity.player, location, true, 0.5, 1, new Double(1,1), 0);
+		super(game, level, Entity.player, location, true, 0.5, 1, new Double(0,0), 0);
 		TileSheet sheet = new TileSheet(FileLoader.loadImage("/player.png"), 16, 4);
 		animations.addAnimation(new Animation(game, "holster", sheet, 1, 0));
 		animations.addAnimation(new Animation(game, "drawn", sheet, 1, 1));
 		animations.addAnimation(new Animation(game, "dead", sheet, 1, 4));
 		animations.setCurrentAnimation("holster");
+		arrow=FileLoader.loadImage("/arrow.png");
 	}
 
 	@Override
@@ -62,6 +68,11 @@ public class Player extends Entity {
 							shootDirection=d;
 							command2=command_shoot;
 							level.setSelectedButtonAsActive();
+						}else{
+							if(!weaponDrawn){
+								game.stateMachine.push(new WarningScreen(game, WarningScreen.shoot));
+								level.selectedButton=null;
+							}
 						}
 					}
 					break;
@@ -69,6 +80,11 @@ public class Player extends Entity {
 					if(bullets<3&&!weaponDrawn){
 						command1=command_reload;
 						level.setSelectedButtonAsActive();
+					}else{
+						if(weaponDrawn){
+							game.stateMachine.push(new WarningScreen(game, WarningScreen.reload));
+							level.selectedButton=null;
+						}
 					}
 					break;
 				case command_draw:
@@ -79,6 +95,9 @@ public class Player extends Entity {
 					if(command1 ==command_walk){
 						command2=command_dash;
 						level.setSelectedButtonAsActive();
+					}else{
+						game.stateMachine.push(new WarningScreen(game, WarningScreen.run));
+						level.selectedButton=null;
 					}
 					break;
 				}
@@ -142,7 +161,19 @@ public class Player extends Entity {
 	
 	@Override
 	public void onRender(Graphics g) {
-		g.drawLine(getLocationOnScreen().x, getLocationOnScreen().y, game.controls.mouseLocation.x, game.controls.mouseLocation.y);
+		if(level.selectedButton !=null){
+			if(level.selectedButton.command==command_shoot ||level.selectedButton.command==command_walk){
+				Double dir = new Double(level.getMouseLocationInGame().x-location.getX(),level.getMouseLocationInGame().y- location.getY());
+				double rotation = Math.toRadians(Entity.VectorAsAngle(dir))*-1;
+				BufferedImage img = new BufferedImage(arrow.getWidth(), arrow.getHeight(), BufferedImage.TYPE_INT_ARGB);
+				double locationX = img.getWidth() / 2;
+				double locationY = img.getHeight() / 2;
+				AffineTransform tx = AffineTransform.getRotateInstance(rotation, locationX, locationY);
+				AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+				img.getGraphics().drawImage(op.filter(arrow, null), 0, 0, null);
+				g.drawImage(img,getLocationOnScreen().x-(int)(level.unitResolution*1.5), getLocationOnScreen().y-(int)(level.unitResolution*1.5),(int)level.unitResolution*3, (int)level.unitResolution*3,null);
+			}
+		}
 	}
 
 }

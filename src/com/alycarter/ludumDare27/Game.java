@@ -8,6 +8,7 @@ import java.awt.event.WindowEvent;
 import javax.swing.JFrame;
 
 import com.alycarter.ludumDare27.stateMachine.StateMachine;
+import com.alycarter.ludumDare27.stateMachine.Tutorial;
 import com.alycarter.ludumDare27.states.level.Level;
 
 public class Game extends JFrame {
@@ -78,6 +79,7 @@ public class Game extends JFrame {
 		level = new Level(this);
 		stateMachine.push(level);
 		canvas.requestFocusInWindow();
+		stateMachine.push(new Tutorial(this));
 	}
 	
 	private void render() {
@@ -91,7 +93,6 @@ public class Game extends JFrame {
 		}else{
 			endGame();
 		}
-		g.drawString(String.valueOf(framesLastSeconds), 10, 10);
 		canvas.getBufferStrategy().show();
 	}
 

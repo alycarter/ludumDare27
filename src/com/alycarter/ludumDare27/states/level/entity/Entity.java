@@ -1,6 +1,5 @@
 package com.alycarter.ludumDare27.states.level.entity;
 
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.geom.AffineTransform;
@@ -75,10 +74,10 @@ public abstract class Entity {
 			onEdgeCollide();
 		}
 		if(entityType != camera &&( 
-				level.tiles.get((int)(location.x+(hitBoxSize/2))).get((int)(location.y+(hitBoxSize/2)))==Level.obstructed ||
-				level.tiles.get((int)(location.x-(hitBoxSize/2))).get((int)(location.y+(hitBoxSize/2)))==Level.obstructed ||
-				level.tiles.get((int)(location.x+(hitBoxSize/2))).get((int)(location.y-(hitBoxSize/2)))==Level.obstructed ||
-				level.tiles.get((int)(location.x-(hitBoxSize/2))).get((int)(location.y-(hitBoxSize/2)))==Level.obstructed )){
+				level.getTileMoveable((int)(location.x+(hitBoxSize/2)),(int)(location.y+(hitBoxSize/2)))==Level.obstructed ||
+				level.getTileMoveable((int)(location.x-(hitBoxSize/2)),(int)(location.y+(hitBoxSize/2)))==Level.obstructed ||
+				level.getTileMoveable((int)(location.x+(hitBoxSize/2)),(int)(location.y-(hitBoxSize/2)))==Level.obstructed ||
+				level.getTileMoveable((int)(location.x-(hitBoxSize/2)),(int)(location.y-(hitBoxSize/2)))==Level.obstructed)){
 			location= oldLocation;
 			onEdgeCollide();
 		}
@@ -119,11 +118,6 @@ public abstract class Entity {
 	public abstract void onUpdate();
 
 	public void render(Graphics g){
-		if(dead){
-			g.setColor(Color.RED);
-		}else{
-			g.setColor(Color.BLACK);
-		}
 		Point loc = getLocationOnScreen();
 		if(animations.getCurrentFrame()!=null){
 			double rotation = Math.toRadians(Entity.VectorAsAngle(lookDirection))*-1;

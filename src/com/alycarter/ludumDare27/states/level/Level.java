@@ -12,7 +12,11 @@ import java.util.ArrayList;
 import com.alycarter.ludumDare27.Game;
 import com.alycarter.ludumDare27.graphics.TileSheet;
 import com.alycarter.ludumDare27.resourseLoading.FileLoader;
+import com.alycarter.ludumDare27.stateMachine.LooseScreen;
 import com.alycarter.ludumDare27.stateMachine.State;
+import com.alycarter.ludumDare27.stateMachine.Victory;
+import com.alycarter.ludumDare27.stateMachine.WinScreen;
+import com.alycarter.ludumDare27.states.level.entity.BarTender;
 import com.alycarter.ludumDare27.states.level.entity.Camera;
 import com.alycarter.ludumDare27.states.level.entity.Enemy;
 import com.alycarter.ludumDare27.states.level.entity.Entity;
@@ -36,6 +40,8 @@ public class Level extends Menu implements State{
 	
 	private TileSheet chamber;
 	private TileSheet holster;
+	private BufferedImage secondsRemaining;
+	private TileSheet numbers;
 	
 	public SideButton selectedButton;
 	public SideButton activeLeftButton;
@@ -61,10 +67,16 @@ public class Level extends Menu implements State{
 		selectedButton=walk;
 		chamber=new TileSheet(FileLoader.loadImage("/chamber.png"), 16, 4);
 		holster=new TileSheet(FileLoader.loadImage("/holster.png"), 16, 2);
+		numbers = new TileSheet(FileLoader.loadImage("/numbers.png"), 5, 10);
+		secondsRemaining= FileLoader.loadImage("/seconds left.png");
 		loadLevel();
 	}
 	
 	public void loadLevel(){
+		if(levelNumber>=5){
+			levelNumber=4;
+			game.stateMachine.push(new Victory(game));
+		}
 		entities = new ArrayList<Entity>();
 		round=0;
 		roundTime=0;
@@ -73,20 +85,24 @@ public class Level extends Menu implements State{
 		BufferedReader mapFile = new BufferedReader(new InputStreamReader(FileLoader.loadFile("/"+levelNumber+".map")));
 		loadHitmap(mapFile);
 		buildImageTexture(mapFile, tiles);
-		camera = new Camera(game, this, new Double(1,1), null);
 		try{
 			while(!mapFile.readLine().equals("eof")){
 				switch(Integer.valueOf(mapFile.readLine())){
 				case 0:
-					player = new Player(game, this, new Double(Integer.valueOf(mapFile.readLine()),Integer.valueOf(mapFile.readLine())));
+					player = new Player(game, this, new Double(Integer.valueOf(mapFile.readLine())+0.5,Integer.valueOf(mapFile.readLine())+0.5));
 					entities.add(player);
 					break;
 				case 1:
-					entities.add(new Enemy(game, this, new Double(Integer.valueOf(mapFile.readLine()), Integer.valueOf(mapFile.readLine())), new Double(0, 0)));
-					
+					entities.add(new Enemy(game, this, new Double(Integer.valueOf(mapFile.readLine())+0.5, Integer.valueOf(mapFile.readLine())+0.5), new Double(0, 0)));
+					break;
+				case 2:
+					entities.add(new BarTender(game, this, new Double(Integer.valueOf(mapFile.readLine())+0.5, Integer.valueOf(mapFile.readLine())+0.5), new Double(0, 0)));
+					break;
 				}
 			}
+			mapFile.close();
 		}catch(IOException e){}
+		camera = new Camera(game, this, new Double(player.location.x,player.location.y), null);
 	}
 	
 	private void loadHitmap(BufferedReader mapFile){
@@ -150,7 +166,7 @@ public class Level extends Menu implements State{
 					groundTexture.getGraphics().drawImage(tiles.getTile(1), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
 				}	
 			}
-			levelTexture.getGraphics().drawImage(tiles.getTile(6), (int)(levelSize.getX()/2*unitResolution), (int)((levelSize.getY()-1)*unitResolution), (int)unitResolution, (int)unitResolution, null);
+			levelTexture.getGraphics().drawImage(tiles.getTile(6), (int)((levelSize.getX()-1)/2*unitResolution), (int)((levelSize.getY()-1)*unitResolution), (int)unitResolution, (int)unitResolution, null);
 			for(x=0;x<levelSize.x;x++){
 				for(y=0;y<levelSize.y;y++){
 					if(y==0){
@@ -184,6 +200,14 @@ public class Level extends Menu implements State{
 			activeRightButton=selectedButton;
 		}
 	}
+	
+	public boolean getTileMoveable(int x, int y){
+		if(x>=0 && x<levelSize.x &&y>=0 && y<levelSize.y ){
+			return tiles.get(x).get(y);
+		}else{
+			return obstructed;
+		}
+	}
 
 	@Override
 	public void update() {
@@ -199,8 +223,19 @@ public class Level extends Menu implements State{
 			activeLeftButton=null;
 			activeRightButton=null;
 			selectedButton=null;
+			boolean enemiesRemaining = false;
 			for(int i=0;i<entities.size();i++){
 				entities.get(i).OnEndRound();
+				if(!entities.get(i).dead && entities.get(i).entityType==Entity.enemy){
+					enemiesRemaining=true;
+				}
+			}
+			if(!enemiesRemaining){
+				game.stateMachine.push(new WinScreen(game));
+			}else{
+				if (round==10){
+					game.stateMachine.push(new LooseScreen(game));
+				}
 			}
 		}
 		boolean ready =true;
@@ -235,12 +270,19 @@ public class Level extends Menu implements State{
 		for(int i=0;i<entities.size();i++){
 			entities.get(i).render(g);
 		}
-		g.drawString(String.valueOf(round), game.getWidth()/2, 25);
 		g.drawImage(chamber.getTile(player.bullets), game.getWidth()/2-(int)unitResolution, game.getHeight()-(int)unitResolution-25, (int)unitResolution, (int)unitResolution, null);
 		if(player.weaponDrawn){
 			g.drawImage(holster.getTile(1), game.getWidth()/2, game.getHeight()-(int)unitResolution-25, (int)unitResolution, (int)unitResolution, null);
 		}else{
 			g.drawImage(holster.getTile(0), game.getWidth()/2, game.getHeight()-(int)unitResolution-25, (int)unitResolution, (int)unitResolution, null);
+		}
+		g.drawImage(secondsRemaining, 10, 10, secondsRemaining.getWidth()*4, secondsRemaining.getHeight()*4, null);
+		int secondsLeft =10-round;
+		if(secondsLeft==10){
+			g.drawImage(numbers.getTile(1), 10+(secondsRemaining.getWidth()*4), 10, 20, 20, null);
+			g.drawImage(numbers.getTile(0), 10+(secondsRemaining.getWidth()*4)+20, 10, 20, 20, null);
+		}else{
+			g.drawImage(numbers.getTile(secondsLeft), 10+(secondsRemaining.getWidth()*4), 10, 20, 20, null);
 		}
 		super.render(g);
 	}

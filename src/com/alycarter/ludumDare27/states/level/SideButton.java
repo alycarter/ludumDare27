@@ -1,6 +1,5 @@
 package com.alycarter.ludumDare27.states.level;
 
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
@@ -20,11 +19,11 @@ public class SideButton extends Button {
 	
 	private BufferedImage image;
 	private BufferedImage selectionImage;
-	
-	
+	private BufferedImage tick;
 	
 	public SideButton(Controls controls, int command, int side,Level level,int x, int y) {
 		super(controls, x, y, (int)level.unitResolution, (int)level.unitResolution);
+		tick = FileLoader.loadImage("/tick.png");
 		TileSheet sheet = new TileSheet(FileLoader.loadImage("/buttons.png"), 16, 8);
 		image =sheet.getTile(command);
 		selectionImage=sheet.getTile(4);
@@ -46,12 +45,10 @@ public class SideButton extends Button {
 		}
 		g.drawImage(image, rectangle.x, rectangle.y, rectangle.width, rectangle.height, null);
 		if(level.activeLeftButton==this){
-			g.setColor(Color.YELLOW);
-			g.fillRect(rectangle.x+rectangle.width, rectangle.y, (int)level.unitResolution/2, rectangle.height);
+			g.drawImage(tick,rectangle.x+rectangle.width, rectangle.y, (int)level.unitResolution, rectangle.height,null);
 		}
 		if(level.activeRightButton==this){
-			g.setColor(Color.YELLOW);
-			g.fillRect(rectangle.x-(int)(level.unitResolution/2), rectangle.y, (int)level.unitResolution/2, rectangle.height);
+			g.drawImage(tick,rectangle.x-(int)(level.unitResolution), rectangle.y, (int)level.unitResolution, rectangle.height,null);
 		}
 	}
 
