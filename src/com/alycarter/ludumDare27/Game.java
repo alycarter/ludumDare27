@@ -23,6 +23,8 @@ public class Game extends JFrame {
 	private int frameLimit = 120;
 	public int framesLastSeconds  =0;
 	
+	public Level level;
+	
 	public Game(String title, int width, int height) {
 		 super(title);
 		 setSize(width, height);
@@ -73,7 +75,8 @@ public class Game extends JFrame {
 		setVisible(true); 
 		canvas.setSize(getWidth(), getHeight());
 		canvas.setLocation(0, 0);
-		stateMachine.push(new Level(this));
+		level = new Level(this);
+		stateMachine.push(level);
 		canvas.requestFocusInWindow();
 	}
 	

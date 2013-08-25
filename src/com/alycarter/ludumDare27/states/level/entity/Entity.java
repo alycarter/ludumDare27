@@ -74,6 +74,14 @@ public abstract class Entity {
 			location= oldLocation;
 			onEdgeCollide();
 		}
+		if(entityType != camera &&( 
+				level.tiles.get((int)(location.x+(hitBoxSize/2))).get((int)(location.y+(hitBoxSize/2)))==Level.obstructed ||
+				level.tiles.get((int)(location.x-(hitBoxSize/2))).get((int)(location.y+(hitBoxSize/2)))==Level.obstructed ||
+				level.tiles.get((int)(location.x+(hitBoxSize/2))).get((int)(location.y-(hitBoxSize/2)))==Level.obstructed ||
+				level.tiles.get((int)(location.x-(hitBoxSize/2))).get((int)(location.y-(hitBoxSize/2)))==Level.obstructed )){
+			location= oldLocation;
+			onEdgeCollide();
+		}
 		animations.update();
 	}
 	
@@ -103,6 +111,10 @@ public abstract class Entity {
 		// TODO Auto-generated method stub
 		
 	}
+	
+	public void onDie(){
+		
+	}
 
 	public abstract void onUpdate();
 
@@ -124,8 +136,6 @@ public abstract class Entity {
 			g.drawImage(img,loc.x-(int)((imageSize/2)*level.unitResolution), loc.y-(int)((imageSize/2)*level.unitResolution),
 					(int)(imageSize*level.unitResolution), (int)(imageSize*level.unitResolution),null);
 		}
-		g.drawOval(loc.x-(int)((hitBoxSize/2)*level.unitResolution), loc.y-(int)((hitBoxSize/2)*level.unitResolution),
-				(int)(hitBoxSize*level.unitResolution), (int)(hitBoxSize*level.unitResolution));
 		onRender(g);
 	}
 	

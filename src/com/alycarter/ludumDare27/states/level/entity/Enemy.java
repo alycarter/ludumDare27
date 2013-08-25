@@ -17,6 +17,7 @@ public class Enemy extends Entity {
 		TileSheet sheet = new TileSheet(FileLoader.loadImage("/player.png"), 16, 4);
 		animations.addAnimation(new Animation(game, "holser", sheet, 1, 2));
 		animations.addAnimation(new Animation(game, "drawn", sheet, 1, 3));
+		animations.addAnimation(new Animation(game, "dead", sheet, 1, 5));
 		animations.setCurrentAnimation("holser");
 	}
 
@@ -28,19 +29,24 @@ public class Enemy extends Entity {
 	@Override
 	public void OnStartRound() {
 		if(!dead){
+			Double d = new Double();
+			d.setLocation(level.player.location);
+			d.x-=location.x;
+			d.y-=location.y;
+			setDirection(d);
+			lookDirection=getDirection();
 			if(!weaponDrawn){
 				weaponDrawn=true;
 				animations.setCurrentAnimation("drawn");
 			}else{
-				Double d = new Double();
-				d.setLocation(level.player.location);
-				d.x-=location.x;
-				d.y-=location.y;
-				setDirection(d);
-				lookDirection=getDirection();
 				level.entities.add(new Bullet(game, level, this, location, getDirection(), 5));
 			}
 		}
+	}
+	
+	@Override
+	public void onDie() {
+		animations.setCurrentAnimation("dead");
 	}
 
 	@Override

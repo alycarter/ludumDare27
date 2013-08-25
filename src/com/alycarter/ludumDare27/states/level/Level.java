@@ -4,6 +4,9 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.geom.Point2D.Double;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import com.alycarter.ludumDare27.Game;
@@ -18,7 +21,7 @@ import com.alycarter.ludumDare27.states.menu.Menu;
 
 public class Level extends Menu implements State{
 	
-	public ArrayList<Entity> entities = new ArrayList<Entity>();
+	public ArrayList<Entity> entities;
 	public Game game;
 	
 	public double unitResolution= 96;
@@ -26,8 +29,13 @@ public class Level extends Menu implements State{
 	public int round=0;
 	public boolean roundEnd =false;
 	
+	public int levelNumber =0;
+	
 	private BufferedImage levelTexture;
 	private BufferedImage groundTexture;
+	
+	private TileSheet chamber;
+	private TileSheet holster;
 	
 	public SideButton selectedButton;
 	public SideButton activeLeftButton;
@@ -35,55 +43,137 @@ public class Level extends Menu implements State{
 	public boolean buttonClicked  =false;
 	
 	public Point levelSize =new Point(5,5);
+	public ArrayList<ArrayList<Boolean>> tiles;
+	public static final boolean obstructed=true;
+	public static final boolean clear=false;
 	
 	public Camera camera;
 	public Player player;
 	
 	public Level(Game game) {
 		this.game=game;
-		TileSheet tiles = new TileSheet(FileLoader.loadImage("/level.png"), 16, 7);
-		levelTexture= new BufferedImage((int)(levelSize.x*unitResolution), (int)(levelSize.y*unitResolution), BufferedImage.TYPE_INT_ARGB);
-		int x=0;
-		int y=0;
-		for(x=0;x<levelSize.x;x++){
-			for(y=0;y<levelSize.y;y++){
-				levelTexture.getGraphics().drawImage(tiles.getTile(0), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
-				if(y==0){
-					levelTexture.getGraphics().drawImage(tiles.getTile(2), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
-				}
-				if(y==levelSize.y-1){
-					levelTexture.getGraphics().drawImage(tiles.getTile(4), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
-				}
-				if(x==0){
-					levelTexture.getGraphics().drawImage(tiles.getTile(3), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
-				}
-				if(x==levelSize.x-1){
-					levelTexture.getGraphics().drawImage(tiles.getTile(5), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
-				}
-			}	
-		}
-		levelTexture.getGraphics().drawImage(tiles.getTile(6), (int)(levelSize.getX()/2*unitResolution), (int)((levelSize.getY()-1)*unitResolution), (int)unitResolution, (int)unitResolution, null);
-		
-		groundTexture=new BufferedImage(levelTexture.getWidth()+game.getWidth(), levelTexture.getHeight()+game.getHeight(), BufferedImage.TYPE_INT_ARGB);
-		for(x=0;x<groundTexture.getWidth()/unitResolution;x++){
-			for(y=0;y<groundTexture.getHeight()/unitResolution;y++){
-				groundTexture.getGraphics().drawImage(tiles.getTile(1), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
-			}	
-		}
-		camera = new Camera(game, this, new Double(1,1), null);
-		player = new Player(game, this, new Double(1,1));
-		entities.add(player);
-		entities.add(new Enemy(game, this, new Double(4, 4), new Double(0, 0)));
 		SideButton walk =new SideButton(game.controls, Player.command_walk, SideButton.sideLeft, this, 0, game.getHeight()-(int)unitResolution-25);
+		buttons.add(new SideButton(game.controls, Player.command_reload, SideButton.sideLeft, this, 0, game.getHeight()-(int)(2*unitResolution)-25));
 		buttons.add(walk);
 		buttons.add(new SideButton(game.controls, Player.command_shoot, SideButton.sideRight, this, game.getWidth()-(int)unitResolution-3, game.getHeight()-(int)unitResolution-25));
 		buttons.add(new SideButton(game.controls, Player.command_draw, SideButton.sideRight, this, game.getWidth()-(int)unitResolution-3, game.getHeight()-(int)(2*unitResolution)-25));
 		buttons.add(new SideButton(game.controls, Player.command_dash, SideButton.sideRight, this, game.getWidth()-(int)unitResolution-3, game.getHeight()-(int)(3*unitResolution)-25));
 		selectedButton=walk;
+		chamber=new TileSheet(FileLoader.loadImage("/chamber.png"), 16, 4);
+		holster=new TileSheet(FileLoader.loadImage("/holster.png"), 16, 2);
+		loadLevel();
+	}
+	
+	public void loadLevel(){
+		entities = new ArrayList<Entity>();
+		round=0;
+		roundTime=0;
+		roundEnd=false;
+		TileSheet tiles = new TileSheet(FileLoader.loadImage("/level.png"), 16, 7);
+		BufferedReader mapFile = new BufferedReader(new InputStreamReader(FileLoader.loadFile("/"+levelNumber+".map")));
+		loadHitmap(mapFile);
+		buildImageTexture(mapFile, tiles);
+		camera = new Camera(game, this, new Double(1,1), null);
+		try{
+			while(!mapFile.readLine().equals("eof")){
+				switch(Integer.valueOf(mapFile.readLine())){
+				case 0:
+					player = new Player(game, this, new Double(Integer.valueOf(mapFile.readLine()),Integer.valueOf(mapFile.readLine())));
+					entities.add(player);
+					break;
+				case 1:
+					entities.add(new Enemy(game, this, new Double(Integer.valueOf(mapFile.readLine()), Integer.valueOf(mapFile.readLine())), new Double(0, 0)));
+					
+				}
+			}
+		}catch(IOException e){}
+	}
+	
+	private void loadHitmap(BufferedReader mapFile){
+		tiles = new ArrayList<ArrayList<Boolean>>();
+		try {
+			String input =mapFile.readLine();
+			int y=0;
+			while(!input.equals("")){
+				int x=0;
+				int s=0;
+				while(s<input.length()){
+					String value="";
+					while(input.charAt(s)!=','){
+						value=value+input.charAt(s);
+						s++;
+					}
+					if(x>=tiles.size()){
+						tiles.add(x, new ArrayList<Boolean>());
+					}
+					if(Integer.valueOf(value).intValue()==0){
+						tiles.get(x).add(y,obstructed);
+					}else{
+						tiles.get(x).add(y,clear);
+					}
+					s++;
+					x++;
+				}
+				input = mapFile.readLine();
+				y++;
+			}
+			levelSize=new Point(tiles.size(), tiles.get(0).size());
+		} catch (IOException e) {e.printStackTrace();} 
+	}
+	
+	private void buildImageTexture(BufferedReader mapFile, TileSheet tiles){
+		try {
+			levelTexture= new BufferedImage((int)(levelSize.x*unitResolution), (int)(levelSize.y*unitResolution), BufferedImage.TYPE_INT_ARGB);
+			String input =mapFile.readLine();
+			int y=0;
+			while(!input.equals("")){
+				int x=0;
+				int s=0;
+				while(s<input.length()){
+					String value="";
+					while(input.charAt(s)!=','){
+						value=value+input.charAt(s);
+						s++;
+					}
+					levelTexture.getGraphics().drawImage(tiles.getTile(0), x*(int)unitResolution, y*(int)unitResolution, (int)unitResolution, (int)unitResolution, null);				
+					levelTexture.getGraphics().drawImage(tiles.getTile(Integer.valueOf(value)), x*(int)unitResolution, y*(int)unitResolution, (int)unitResolution, (int)unitResolution, null);				
+					s++;
+					x++;
+				}
+				input = mapFile.readLine();
+				y++;
+			}
+			int x=0;
+			groundTexture=new BufferedImage(levelTexture.getWidth()+game.getWidth(), levelTexture.getHeight()+game.getHeight(), BufferedImage.TYPE_INT_ARGB);
+			for(x=0;x<groundTexture.getWidth()/unitResolution;x++){
+				for(y=0;y<groundTexture.getHeight()/unitResolution;y++){
+					groundTexture.getGraphics().drawImage(tiles.getTile(1), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
+				}	
+			}
+			levelTexture.getGraphics().drawImage(tiles.getTile(6), (int)(levelSize.getX()/2*unitResolution), (int)((levelSize.getY()-1)*unitResolution), (int)unitResolution, (int)unitResolution, null);
+			for(x=0;x<levelSize.x;x++){
+				for(y=0;y<levelSize.y;y++){
+					if(y==0){
+						levelTexture.getGraphics().drawImage(tiles.getTile(2), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
+					}
+					if(y==levelSize.y-1){
+						levelTexture.getGraphics().drawImage(tiles.getTile(4), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
+					}
+					if(x==0){
+						levelTexture.getGraphics().drawImage(tiles.getTile(3), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
+					}
+					if(x==levelSize.x-1){
+						levelTexture.getGraphics().drawImage(tiles.getTile(5), (int)(x*unitResolution), (int)(y*unitResolution), (int)unitResolution, (int)unitResolution, null);
+					}
+				}	
+			}
+			
+		} catch (IOException e) {e.printStackTrace();}
+		
 	}
 	
 	public double getLevelDeltaTime(){
-		return game.deltaTime/3;
+		return game.deltaTime/1;
 	}
 	
 	public void setSelectedButtonAsActive(){
@@ -108,6 +198,7 @@ public class Level extends Menu implements State{
 			roundEnd=true;
 			activeLeftButton=null;
 			activeRightButton=null;
+			selectedButton=null;
 			for(int i=0;i<entities.size();i++){
 				entities.get(i).OnEndRound();
 			}
@@ -145,6 +236,12 @@ public class Level extends Menu implements State{
 			entities.get(i).render(g);
 		}
 		g.drawString(String.valueOf(round), game.getWidth()/2, 25);
+		g.drawImage(chamber.getTile(player.bullets), game.getWidth()/2-(int)unitResolution, game.getHeight()-(int)unitResolution-25, (int)unitResolution, (int)unitResolution, null);
+		if(player.weaponDrawn){
+			g.drawImage(holster.getTile(1), game.getWidth()/2, game.getHeight()-(int)unitResolution-25, (int)unitResolution, (int)unitResolution, null);
+		}else{
+			g.drawImage(holster.getTile(0), game.getWidth()/2, game.getHeight()-(int)unitResolution-25, (int)unitResolution, (int)unitResolution, null);
+		}
 		super.render(g);
 	}
 	
